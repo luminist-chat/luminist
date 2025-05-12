@@ -1,0 +1,30 @@
+[tool.poetry]
+name = "luminist-chat"
+version = "0.1.0"
+description = "Conversational AI assistant for deep document understanding and semantic exploration"
+authors = ["BASICBIT <basic@basicbit.net>"]
+package-mode = false
+
+[tool.poetry.dependencies]
+python = "^3.10"
+fastapi = "*"
+uvicorn = {extras = ["standard"], version = "*"}
+langchain = "*"
+weaviate-client = "*"
+openai = "*"
+pdfplumber = "*"
+python-dotenv = "*"
+pydantic = "*"
+spacy = "*"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "*"
+typer = "*"
+rich = "*"
+
+[tool.poetry.scripts]
+api = "api.main:app"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
