@@ -7,7 +7,7 @@ package-mode = false
 
 [tool.poetry.dependencies]
 python = "^3.10"
-fastapi = "*"
+fastapi = {extras = ["standard"], version = "*"}
 uvicorn = {extras = ["standard"], version = "*"}
 langchain = "*"
 weaviate-client = "*"
@@ -26,7 +26,6 @@ faiss-cpu = "*"
 flashrank = "*"
 sentence-transformers = "*"
 transformers = "*"
-fastapi = {extras = ["standard"], version = "*"}
 
 [tool.poetry.group.dev.dependencies]
 pytest = "*"

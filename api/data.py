@@ -17,20 +17,16 @@ embeddings_model = OpenAIEmbeddings()
 vector_store = FAISS.load_local("react_vector_store", embeddings_model, allow_dangerous_deserialization=True);
 queryLLM = ChatOpenAI(model=QUERY_MODEL);
 
-print("Fetching similar chunks...")
 vector_retriever = vector_store.as_retriever(
     search_kwargs={"k": FETCH_CHUNKS}
 )
 
-print ("Reranking...")
 hf_cross_encoder = HuggingFaceCrossEncoder(model_name="BAAI/bge-reranker-base")
 compressor = CrossEncoderReranker(model=hf_cross_encoder, top_n=RERANK_CHUNKS)
 compression_retriever = ContextualCompressionRetriever(
     base_compressor=compressor,
     base_retriever=vector_retriever
 )
-
-query = "What is the point of this framework?"
 
 prompt = ChatPromptTemplate.from_messages([
     ("system", """You are a helpful AI assistant. Use the following context to answer the question.
@@ -56,5 +52,7 @@ qa_chain = (
     | StrOutputParser()
 )
 
-output = qa_chain.invoke(query)
-print(output)
+print("Ready!")
+
+def runQuery(query: str):
+    return qa_chain.invoke(query)

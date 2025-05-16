@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from pydantic import BaseModel
 from datetime import datetime
 from typing import List
+from data import runQuery
 
 app = FastAPI()
 
@@ -55,3 +56,12 @@ def chat(space_id: str, conversation_id: str, message: str):
 @app.get("/health")
 def health():
     return {"status": "ok"}
+
+
+class Query(BaseModel):
+    query: str
+
+@app.post("/query")
+def query(query: Query):
+    result = runQuery(query.query)
+    return {"status": "ok", "result": result}
