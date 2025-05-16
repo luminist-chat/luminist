@@ -16,6 +16,14 @@ pdfplumber = "*"
 python-dotenv = "*"
 pydantic = "*"
 spacy = "*"
+langchain-community = "*"
+langchain-unstructured = "*"
+unstructured = {extras = ["pdf"], version = "*"}
+langchain-experimental = "*"
+langchain-openai = "*"
+langchain-core = "*"
+faiss-cpu = "*"
+flashrank = "*"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "*"
