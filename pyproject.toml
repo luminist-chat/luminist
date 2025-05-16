@@ -24,6 +24,9 @@ langchain-openai = "*"
 langchain-core = "*"
 faiss-cpu = "*"
 flashrank = "*"
+sentence-transformers = "*"
+transformers = "*"
+fastapi = {extras = ["standard"], version = "*"}
 
 [tool.poetry.group.dev.dependencies]
 pytest = "*"

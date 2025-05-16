@@ -1,73 +1,60 @@
-from langchain_unstructured import UnstructuredLoader
-from langchain_experimental.text_splitter import SemanticChunker
 from langchain_openai.embeddings import OpenAIEmbeddings
 from langchain_community.vectorstores import FAISS
 from langchain.retrievers.document_compressors import CrossEncoderReranker
 from langchain.retrievers import ContextualCompressionRetriever
-from langchain import hub;
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.runnables import RunnablePassthrough
 from langchain_openai.chat_models import ChatOpenAI
+from langchain_community.cross_encoders import HuggingFaceCrossEncoder
+from langchain_core.prompts import ChatPromptTemplate
 
-loader = UnstructuredLoader(
-    file_path="data/pdf/react.pdf",
-    strategy="fast",
+QUERY_MODEL = "gpt-4o-mini"
+FETCH_CHUNKS = 1000
+RERANK_CHUNKS = 100
+
+print("Loading vector store...")
+embeddings_model = OpenAIEmbeddings()
+vector_store = FAISS.load_local("react_vector_store", embeddings_model, allow_dangerous_deserialization=True);
+queryLLM = ChatOpenAI(model=QUERY_MODEL);
+
+print("Fetching similar chunks...")
+vector_retriever = vector_store.as_retriever(
+    search_kwargs={"k": FETCH_CHUNKS}
 )
-embeddings_model = OpenAIEmbeddings();
-text_splitter = SemanticChunker(embeddings_model)
 
-docs = []
-for doc in loader.lazy_load():
-    docs.append(doc)
+print ("Reranking...")
+hf_cross_encoder = HuggingFaceCrossEncoder(model_name="BAAI/bge-reranker-base")
+compressor = CrossEncoderReranker(model=hf_cross_encoder, top_n=RERANK_CHUNKS)
+compression_retriever = ContextualCompressionRetriever(
+    base_compressor=compressor,
+    base_retriever=vector_retriever
+)
 
+query = "What is the point of this framework?"
 
-chunks = text_splitter.split_documents(docs)
-
-for idx, chunk in enumerate(chunks):
-    chunk.metadata["id"] = idx
-
-vector_store = FAISS.from_documents(chunks, embeddings_model)
-
-vector_retriever = vector_store.as_retriever(search_kwargs={"k": 20});
-
-
-vector_store.add_documents(chunks)
-
-query = "What is this document about?"
-
-#compressor = CrossEncoderReranker();
-#compression_retriever = ContextualCompressionRetriever(
-#    base_compressor=compressor,
-#    base_retriever=vector_retriever
-#)
-
-
-#compressed_docs = compression_retriever.invoke(query);
-
-
-# See full prompt at https://smith.langchain.com/hub/rlm/rag-prompt
-prompt = hub.pull("rlm/rag-prompt")
-
+prompt = ChatPromptTemplate.from_messages([
+    ("system", """You are a helpful AI assistant. Use the following context to answer the question.
+    If you don't know the answer, just say that you don't know. Don't try to make up an answer.
+    
+    Context: {context}
+    """),
+    ("human", "{question}")
+])
 
 def format_docs(docs):
-    return "\n\n".join(doc.page_content for doc in docs)
+    formatted = "\n\n".join(doc.page_content for doc in docs)
+    return formatted
 
-
-#print(compressed_docs);
-
-llm = ChatOpenAI(model="gpt-4o-mini");
-
+print("Running query...")
 qa_chain = (
     {
-        "context": vector_retriever | format_docs,
+        "context": compression_retriever | format_docs,
         "question": RunnablePassthrough(),
     }
     | prompt
-    | llm
+    | queryLLM
     | StrOutputParser()
 )
 
-
 output = qa_chain.invoke(query)
-
-print(output);
+print(output)
