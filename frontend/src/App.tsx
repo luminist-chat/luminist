@@ -17,9 +17,13 @@ function App() {
 
   return (
     <div>
-      <h1>Luminist</h1>
-      <div className="input-container">
-        <input type="text" className="bg-white text-black" value={query} onChange={(e) => setQuery(e.target.value)} disabled={loading} />
+      <h1>💡 Luminist</h1>
+      <div className="input-container p-5 flex flex-row">
+        <div className="flex flex-col justify-center">
+          <span className="text-white">Query:</span>
+          <textarea className="bg-white text-black m-5" value={query} onChange={(e) => setQuery(e.target.value)} disabled={loading} />
+        </div>
+        <div className="flex flex-col justify-center">
         <button onClick={() => {
           setLoading(true);
           setResult("");
@@ -34,6 +38,7 @@ function App() {
         }}
         disabled={loading}
         >Submit</button>
+        </div>
       </div>
       <div className="loading-container">
         <ClipLoader

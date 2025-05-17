@@ -22,7 +22,7 @@ poetry install
 docker compose up
 ```
 
-Visit [`http://localhost:8000`](http://localhost:8000) to use the locally running instance!
+Visit [`http://localhost:5173`](http://localhost:5173) to use the locally running instance!
 
 ## Contributing
 
