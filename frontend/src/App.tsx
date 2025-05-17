@@ -2,33 +2,47 @@ import { useState } from 'react'
 import reactLogo from './assets/react.svg'
 import viteLogo from '/vite.svg'
 import './App.css'
+import { ClipLoader } from "react-spinners";
+
+function LoadingSpinner() {
+  return <div className="spinner"></div>
+}
 
 function App() {
-  const [count, setCount] = useState(0)
+  let [loading, setLoading] = useState(false);
+
+  let [query, setQuery] = useState("");
+
+  let [result, setResult] = useState("");
 
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
+    <div>
+      <h1>Luminist</h1>
+      <div className="input-container">
+        <input type="text" className="bg-white text-black" value={query} onChange={(e) => setQuery(e.target.value)} disabled={loading} />
+        <button onClick={() => {
+          setLoading(true);
+          setResult("");
+          fetch("http://localhost:8000/query", {
+            method: "POST",
+            headers: {'Content-Type':'application/json'},
+            body: JSON.stringify({ query: query }),
+          }).then((res) => res.json()).then((data) => {
+            setResult(data.result);
+            setLoading(false);
+          });
+        }}
+        disabled={loading}
+        >Submit</button>
       </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
+      <div className="loading-container">
+        <ClipLoader
+        color="#00AAFF"
+        loading={loading}
+      />
       </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
+      <div>{result}</div>
+    </div>
   )
 }
 
