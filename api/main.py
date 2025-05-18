@@ -1,11 +1,20 @@
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+import os
 from datetime import datetime
 from typing import List
-from data import runQuery
+
+from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
+
+import weaviate
+from langchain.chains import RetrievalQA
+from langchain_openai.chat_models import ChatOpenAI
+from langchain_openai.embeddings import OpenAIEmbeddings
+from langchain_community.vectorstores import Weaviate
 
 app = FastAPI()
+app.mount("/static", StaticFiles(directory="data/pdf"), name="static")
 
 app.add_middleware(
     CORSMiddleware,
@@ -68,9 +77,42 @@ def health():
 
 
 class Query(BaseModel):
-    query: str
+    question: str
 
-@app.post("/query")
-def query(query: Query):
-    result = runQuery(query.query)
-    return {"status": "ok", "result": result}
+@app.post("/ask")
+def ask(query: Query):
+    weaviate_host = os.environ.get("WEAVIATE_HOST", "http://localhost:8080")
+    client = weaviate.Client(weaviate_host)
+    embeddings = OpenAIEmbeddings()
+    vectordb = Weaviate(client, index_name="Paragraph", text_key="text", embedding=embeddings)
+
+    qa = RetrievalQA.from_chain_type(
+        llm=ChatOpenAI(model="gpt-3.5-turbo"),
+        chain_type="stuff",
+        retriever=vectordb.as_retriever(search_kwargs={"k": 6}),
+        return_source_documents=True,
+    )
+
+    result = qa.invoke({"query": query.question})
+    docs = result["source_documents"]
+    citations = []
+    entities = set()
+    for d in docs:
+        file = d.metadata.get("file")
+        page = d.metadata.get("page")
+        citations.append({
+            "file": file,
+            "page": page,
+            "link": f"/static/{file}#page={page}",
+        })
+        ent_res = client.query.get("Paragraph", ["mentions"])
+        ent_res = ent_res.with_where({"path": ["file"], "operator": "Equal", "valueText": file})
+        ent_res = ent_res.with_limit(1)
+        data = ent_res.do()
+        if data.get("data", {}).get("Get", {}).get("Paragraph"):
+            for p in data["data"]["Get"]["Paragraph"]:
+                for e in p.get("mentions", []):
+                    entities.add(e.get("name"))
+
+    return {"answer": result["result"], "citations": citations, "entities": sorted(entities)}
+

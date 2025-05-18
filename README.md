@@ -27,3 +27,17 @@ Visit [`http://localhost:5173`](http://localhost:5173) to use the locally runnin
 ## Contributing
 
 Contributions are welcome, feel free to submit issues and PRs! [Join my Discord](https://discord.gg/PYKTaJ5Ett) if you want to yap!
+
+### Data Processing
+
+1. Extract raw text from PDFs:
+
+```bash
+python scripts/extract_raw.py --pdf-dir data/pdf --output data/raw.jsonl
+```
+
+2. Clean the extracted text (requires OpenAI API key in `.env`):
+
+```bash
+python scripts/clean_raw.py --input-jsonl data/raw.jsonl --output-jsonl data/clean.jsonl
+```
